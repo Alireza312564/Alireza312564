@@ -3,141 +3,420 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WireGuard_ALI</title>
+    <title>پنل ساخت کانفیگ WireGuard و DNS</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            direction: rtl;
-            text-align: center;
-            background-color: #f4f4f4;
-            padding: 20px;
-        }
-        .container {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            display: inline-block;
-        }
-        pre {
-            text-align: left;
-            background: #eee;
-            padding: 10px;
-            border-radius: 5px;
-            word-wrap: break-word;
-            white-space: pre-wrap;
-        }
-        button {
-            margin: 5px;
-            padding: 10px;
-            cursor: pointer;
-        }
-        .footer {
-            margin-top: 20px;
-            font-size: 14px;
-        }
-        #lockScreen {
+        /* استایل فرم ورود */
+        #passwordOverlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: white;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
             display: flex;
             justify-content: center;
             align-items: center;
-            flex-direction: column;
+            z-index: 9999;
+            font-family: Arial, sans-serif;
+        }
+        #passwordOverlay .loginBox {
+            background-color: #fff;
+            padding: 30px 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            max-width: 360px;
+            width: 100%;
+        }
+        #passwordOverlay .loginBox h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+        #passwordOverlay .loginBox input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            margin: 12px 0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 18px;
+        }
+        #passwordOverlay .loginBox button {
+            background-color: #FFA500;
+            color: #000;
+            border: none;
+            border-radius: 6px;
+            padding: 12px 24px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: background-color 0.3s ease;
+        }
+        #passwordOverlay .loginBox button:hover {
+            background-color: #ff8c00;
+        }
+        #passwordError {
+            color: #f33;
+            display: none;
+            margin-top: 10px;
+        }
+
+        /* استایل بخش اصلی */
+        body {
+            background-color: #8c8484;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+            color: #000;
+            font-size: 18px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            margin: 0 10px;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px;
+            background-color: rgba(255, 140, 0, 0.8);
+            color: #000;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+
+        .tab:hover {
+            background-color: rgba(255, 69, 0, 1);
+        }
+
+        .tab.active {
+            background-color: rgba(255, 165, 0, 1);
+        }
+
+        .container {
+            background: rgba(255, 165, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            display: inline-block;
+        }
+
+        button {
+            margin: 10px;
+            padding: 12px 24px;
+            font-size: 18px;
+            cursor: pointer;
+            color: #000;
+            border: 2px solid #000;
+            background: rgba(255, 140, 0, 0.8);
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: rgba(255, 69, 0, 1);
+        }
+
+        h1 {
+            font-size: 32px;
+            color: #000;
+            margin-bottom: 20px;
+        }
+
+        label, input, select, textarea {
+            font-size: 18px;
+            margin: 8px 0;
+            color: #000;
+        }
+
+        input, select, textarea {
+            padding: 10px;
+            width: 300px;
+            margin: 5px 0;
+            border-radius: 5px;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #000;
+        }
+
+        textarea {
+            height: 150px;
+        }
+
+        .channels {
+            margin-top: 30px;
+        }
+
+        #copyMessage {
+            display: none;
+            color: green;
         }
     </style>
 </head>
 <body>
 
-    <div id="lockScreen">
-        <h2>لطفاً رمز عبور را وارد کنید</h2>
-        <input type="password" id="passwordInput" placeholder="رمز عبور">
-        <button onclick="checkPassword()">ورود</button>
-    </div>
-
-    <div id="mainContent" style="display: none;">
-        <h2>WireGuard_ALI</h2>
-        <div class="container">
-            <button onclick="generateConfig()">تولید</button>
-            <button onclick="copyToClipboard()">کپی کردن</button>
-            <button onclick="saveToFile()">ذخیره</button>
-            <pre id="output">اینجا نتیجه نمایش داده می‌شود...</pre>
-        </div>
-
-        <div class="footer">
-            ساخته شده توسط ALI
+    <!-- صفحه‌ی ورود رمز -->
+    <div id="passwordOverlay">
+        <div class="loginBox">
+            <h2>لطفاً رمز عبور را وارد کنید</h2>
+            <input id="passwordInput" type="password" placeholder="رمز عبور">
+            <button id="passwordSubmit">ورود</button>
+            <div id="passwordError">رمز عبور اشتباه است!</div>
         </div>
     </div>
+
+    <!-- محتوای اصلی (تا ورود موفق مخفی است) -->
+    <div id="mainContent" style="display:none;">
+
+        <div class="tabs">
+            <div class="tab active" id="wireguardTab">پنل WireGuard</div>
+            <div class="tab" id="dnsTab">پنل DNS</div>
+        </div>
+
+        <div class="container" id="wireguardPanel">
+            <h1>تولید کننده پیکربندی WireGuard</h1>
+            <textarea id="configText" readonly placeholder="پیکربندی WireGuard اینجا نمایش داده می شود"></textarea>
+
+            <br>
+            <label for="country">انتخاب کشور:</label><br>
+            <select id="country">
+                <option value="emirates">🇦🇪Emirates</option>
+                <option value="turkey">🇹🇷Turkey</option>
+                <option value="qatar">🇶🇦Qatar</option>
+                <option value="germany">🇩🇪Germany</option>
+                <option value="france">🇫🇷France</option>
+                <option value="usa">🇺🇸 USA</option>
+                <option value="canada">🇨🇦Canada</option>
+                <option value="uk">🇬🇧UK</option>
+                <option value="iran">🇮🇷 Iran</option>
+                <option value="saudi_arabia">🇸🇦Saudi Arabia</option>
+                <option value="japan">🇯🇵 Japan</option>
+                <option value="china">🇨🇳China</option>
+                <option value="pakistan">🇵🇰Pakistan</option>
+                <option value="russia">🇷🇺Russia</option>
+            </select>
+
+            <br>
+            <label for="ip_version">انتخاب نسخه آی‌پی:</label><br>
+            <select id="ip_version">
+                <option value="ipv4">ipv4</option>
+                <option value="ipv6">ipv6</option>
+                <option value="both" selected>ipv4 و ipv6</option>
+            </select>
+
+            <label for="configName">نام فایل پیکربندی:</label><br>
+            <input id="configName" type="text" placeholder="" value="">
+
+            <br>
+            <label for="sim_card">انتخاب سیم کارت:</label><br>
+            <select id="sim_card">
+                <option value="hmrah_eol" selected>همراه اول</option>
+                <option value="Irancell">ایرانسل</option>
+            </select>
+
+            <br>
+            <button id="generateButton">تولید پیکربندی</button>
+            <button id="saveButton">ذخیره به فایل</button>
+        </div>
+
+        <div class="container" id="dnsPanel" style="display:none;">
+            <h1>پنل DNS کشورها</h1>
+            <label for="dnsCountry">انتخاب کشور:</label><br>
+            <select id="dnsCountry">
+                <option value="emirates">🇦🇪Emirates</option>
+                <option value="turkey">🇹🇷Turkey</option>
+                <option value="qatar">🇶🇦Qatar</option>
+                <option value="germany">🇩🇪Germany</option>
+                <option value="france">🇫🇷France</option>
+                <option value="usa">🇺🇸 USA</option>
+                <option value="canada">🇨🇦Canada</option>
+                <option value="uk">🇬🇧UK</option>
+                <option value="iran">🇮🇷 Iran</option>
+                <option value="saudi_arabia">🇸🇦Saudi Arabia</option>
+                <option value="japan">🇯🇵 Japan</option>
+                <option value="china">🇨🇳China</option>
+                <option value="pakistan">🇵🇰Pakistan</option>
+                <option value="russia">🇷🇺Russia</option>
+            </select>
+
+            <br>
+            <label for="dnsIpVersion">انتخاب نسخه آی‌پی:</label><br>
+            <select id="dnsIpVersion">
+                <option value="ipv4">IPv4</option>
+                <option value="ipv6">IPv6</option>
+                <option value="both">IPv4 و IPv6</option>
+            </select>
+
+            <br>
+            <button id="generateDNSButton">نمایش DNS کشور انتخابی</button>
+            <textarea id="dnsText" readonly placeholder="DNS مربوط به کشور انتخابی اینجا نمایش داده می‌شود"></textarea>
+            <button id="copyDNSButton">کپی DNS</button>
+            <div id="copyMessage"></div>
+        </div>
+
+        <div class="channels">
+            <p><b>کانال های ما</b></p>
+            <p>کانال تلگرامی ما: <a href="https://t.me/free_config_456" target="_blank">Free Config</a></p>
+            <p>کانال یوتیوب ما: <a href="https://youtube.com/@iran_vpn_78?si=mzwEh2A1lXjzblV1" target="_blank">@IRAN VPN</a></p>
+        </div>
+
+    </div><!-- پایان mainContent -->
 
     <script>
-        function checkPassword() {
-            let password = document.getElementById("passwordInput").value;
-            if (password === "Ali11228") {
-                document.getElementById("lockScreen").style.display = "none";
-                document.getElementById("mainContent").style.display = "block";
+        // مدیریت ورود رمز
+        const overlay = document.getElementById('passwordOverlay');
+        const mainContent = document.getElementById('mainContent');
+        const submitBtn = document.getElementById('passwordSubmit');
+        const passwordInput = document.getElementById('passwordInput');
+        const passwordError = document.getElementById('passwordError');
+        const CORRECT_PASSWORD = 'Ali11228';
+
+        submitBtn.addEventListener('click', () => {
+            if (passwordInput.value === CORRECT_PASSWORD) {
+                overlay.style.display = 'none';
+                mainContent.style.display = 'block';
             } else {
-                alert("رمز اشتباه است!");
+                passwordError.style.display = 'block';
             }
+        });
+
+        // مدیریت تب‌ها
+        document.getElementById("wireguardTab").addEventListener("click", function () {
+            document.getElementById("wireguardPanel").style.display = "block";
+            document.getElementById("dnsPanel").style.display = "none";
+            this.classList.add("active");
+            document.getElementById("dnsTab").classList.remove("active");
+        });
+
+        document.getElementById("dnsTab").addEventListener("click", function () {
+            document.getElementById("wireguardPanel").style.display = "none";
+            document.getElementById("dnsPanel").style.display = "block";
+            this.classList.add("active");
+            document.getElementById("wireguardTab").classList.remove("active");
+        });
+
+        // تولید کلیدها و پیکربندی WireGuard
+        function generateWireguardKeys() {
+            function getRandomKey() {
+                const array = new Uint8Array(32);
+                window.crypto.getRandomValues(array);
+                let binary = "";
+                array.forEach(byte => binary += String.fromCharCode(byte));
+                return btoa(binary);
+            }
+            return {
+                privateKey: getRandomKey(),
+                publicKey: getRandomKey(),
+                preSharedKey: getRandomKey()
+            };
         }
 
-        async function generatePrivateKey() {
-            const key = new Uint8Array(32);
-            window.crypto.getRandomValues(key);
-            return btoa(String.fromCharCode(...key));
+        function randomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
         }
 
-        function generateRandomIP() {
-            return "80.81." + (Math.floor(Math.random() * 256)) + "." + (Math.floor(Math.random() * 256));
+        const ipv4Prefixes = {
+            "emirates": "217.199.", "turkey": "78.189.", "qatar": "37.205.",
+            "germany": "185.21.", "france": "51.75.", "usa": "104.27.",
+            "canada": "192.99.", "uk": "185.128.", "iran": "5.160.",
+            "saudi_arabia": "94.74.", "japan": "133.242.", "china": "116.31.",
+            "pakistan": "103.255.", "russia": "95.213."
+        };
+        const ipv6Prefixes = {
+            "emirates": "2a01:4f8:1c1c::", "turkey": "2a01:4f8:1c1c::",
+            "qatar": "2a01:4f8:1c1c::", "germany": "2a01:4f8:1c1c::",
+            "france": "2a01:4f8:1c1c::", "usa": "2600:3c01::",
+            "canada": "2600:3c01::", "uk": "2a00:1098::",
+            "iran": "2a01:4f8:1c1c::", "saudi_arabia": "2a01:4f8:1c1c::",
+            "japan": "2400:8500::", "china": "2400:8500::",
+            "pakistan": "2400:8500::", "russia": "2a01:4f8:1c1c::"
+        };
+
+        function generateRandomIPv4(prefix) {
+            return prefix + randomInt(0, 255) + "." + randomInt(0, 255);
+        }
+        function generateRandomIPv6(prefix) {
+            function randHex() { return randomInt(0, 65535).toString(16); }
+            return prefix + randHex() + ":" + randHex() + ":" + randHex();
+        }
+        function generateDNSServers(sim_card) {
+            return sim_card === "hmrah_eol" ? "10.202.10.10" : "78.157.42.100";
         }
 
-        async function generateConfig() {
-            let privateKey = await generatePrivateKey();
-            let address = "25." + (Math.floor(Math.random() * 256)) + "." + (Math.floor(Math.random() * 256)) + "." + (Math.floor(Math.random() * 256)) + "/24";
-            let dns = generateRandomIP() + ", 10.202.10.10";
-            let port = Math.floor(Math.random() * (65535 - 1024)) + 1024;
-            let mtu = Math.floor(Math.random() * (1500 - 1280)) + 1280;
+        function generateWireguardConfig(country, ip_version, sim_card) {
+            const keys = generateWireguardKeys();
+            const ipv4_prefix = ipv4Prefixes[country];
+            const ipv6_prefix = ipv6Prefixes[country];
+            if (!ipv4_prefix && ip_version !== "ipv6") { alert("کشور انتخابی برای IPv4 نامعتبر است."); return ""; }
+            if (!ipv6_prefix && ip_version !== "ipv4") { alert("کشور انتخابی برای IPv6 نامعتبر است."); return ""; }
 
-            let config = `[Interface]
-PrivateKey = ${privateKey}
+            let ipv4_address = "", ipv6_address = "";
+            if (ip_version !== "ipv6") ipv4_address = generateRandomIPv4(ipv4_prefix);
+            if (ip_version !== "ipv4") ipv6_address = generateRandomIPv6(ipv6_prefix);
+
+            const endpoint = generateRandomIPv4(ipv4_prefix) + ":51820";
+            const dns_servers = generateDNSServers(sim_card);
+
+            let address = "";
+            if (ip_version === "ipv4") address = ipv4_address + "/24";
+            else if (ip_version === "ipv6") address = ipv6_address + "/64";
+            else address = ipv4_address + "/24, " + ipv6_address + "/64";
+
+            return `# Configuration
+
+[Interface]
+PrivateKey = ${keys.privateKey}
 Address = ${address}
-DNS = ${dns}
-MTU = ${mtu}
-ListenPort = ${port}`;
+DNS = ${dns_servers}
+MTU = 1280
+ListenPort = 51820
 
-            document.getElementById("output").textContent = config;
+[Peer]
+PublicKey = ${keys.publicKey}
+PresharedKey = ${keys.preSharedKey}
+Endpoint = ${endpoint}
+`;
         }
 
-        function copyToClipboard() {
-            let text = document.getElementById("output").textContent;
-            let textarea = document.createElement("textarea");
-            textarea.value = text;
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand("copy");
-            document.body.removeChild(textarea);
-            alert("متن با موفقیت کپی شد!");
+        document.getElementById("generateButton").addEventListener("click", function () {
+            const country = document.getElementById("country").value;
+            const ip_version = document.getElementById("ip_version").value;
+            const sim_card = document.getElementById("sim_card").value;
+            const configName = document.getElementById("configName").value || "wireguard_config";
+            const config = generateWireguardConfig(country, ip_version, sim_card);
+            if (!config) return;
+            document.getElementById("configText").value = config;
+            const blob = new Blob([config], { type: "text/plain" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `${configName}.conf`;
+            link.click();
+        });
+
+        // تولید و نمایش DNS
+        function generateRandomDNS(country, ip_version) {
+            let dns = "";
+            if (ip_version === "ipv4") dns = generateRandomIPv4(ipv4Prefixes[country]);
+            else if (ip_version === "ipv6") dns = generateRandomIPv6(ipv6Prefixes[country]);
+            else dns = `${generateRandomIPv4(ipv4Prefixes[country])}
+78.157.42.100
+${generateRandomIPv6(ipv6Prefixes[country])}
+${generateRandomIPv6(ipv6Prefixes[country])}`;
+            return dns;
         }
 
-        function saveToFile() {
-            let filename = prompt("نام فایل را وارد کنید:");
-            if (!filename) return;
-            if (!filename.endsWith(".conf")) {
-                filename += ".conf";
-            }
-            let text = document.getElementById("output").textContent;
-            let blob = new Blob([text], { type: "application/octet-stream" });
-            let a = document.createElement("a");
-            a.href = URL.createObjectURL(blob);
-            a.download = filename;
-            a.style.display = "none";
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        }
+        document.getElementById("generateDNSButton").addEventListener("click", function () {
+            const country = document.getElementById("dnsCountry").value;
+            const ip_version = document.getElementById("dnsIpVersion").value;
+            const dns = generateRandomDNS(country, ip_version);
+            if (!dns.trim()) { alert("اطلاعات DNS برای کشور انتخابی موجود نیست!"); return; }
+            document.getElementById("dnsText").value = dns;
+        });
+
+        // کپی کردن DNS
+        document.getElementById("copyDNSButton").addEventListener("click", function () {
+            const dns = document.getElementById("dnsText").value;
+            if (!dns.trim()) { alert("متنی برای کپی کردن وجود ندارد!"); return; }
+            navigator.clipboard.writeText(dns)
+                .then(() => alert("DNS با موفقیت کپی شد!"))
+                .catch(err => alert("خطا در کپی کردن DNS: " + err));
+        });
     </script>
-
 </body>
 </html>
